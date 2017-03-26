@@ -1,0 +1,270 @@
+#!/bin/bash
+# clear
+
+###/
+#
+## CONFIG FILE PARSER
+#
+#		Version 1.0.0
+#		Released March 21st, 2017
+#
+#		Copyright Lee Hodson, @vr51
+#
+#		GPL3
+#
+#		Donate: paypal.me/vr51
+#
+#	Reads file of 'key = value' pairs into an associative array
+#
+# 	File must be of format 'key = value'
+# 	This becomes associative array conf[key]=value
+#		Keys must begin with a letter, a number or an underscore otherwise they are ignored
+#
+#	Use to initialise or update an associative array with values stored in a file (e.g. config files)
+#
+#	Example File Format
+#
+#		[websites]
+#
+#		JournalXtra = https://journalxtra.com
+#		VR51 = https://vr51.com
+#		wpservicemasters = https://wpservicemasters.com
+#
+##	INSTRUCTIONS
+#
+#		Call the function:
+#
+#			parseconf $file $keys
+#
+#		$args are
+#
+#			1) file to parse
+#			2) values to read (ignored unless the -s flag is applied)
+#
+#		FLAGS
+#
+#			-s instructs parseconf to read only specified keys
+#			-h shows help text
+#			-v shows version
+#
+#		Use the return array in your code:
+#
+#			${conf[key]}
+#
+##	EXAMPLE ONE
+#
+#		Get all values:
+#
+#			parseconf file.conf # Fill 'conf[@]' with all values stored in file.conf
+#			echo ${conf[name]} # Echo the value stored in 'conf[@]' for key 'name'
+#			declare -p conf # show contents of the full array
+#
+##	EXAMPLE TWO
+#
+#		Get only some values:
+#
+#			parseconf -s file.conf one two three # Fill 'conf' with only the values with keys 'one', 'two', and 'three' in file.conf
+#			echo ${conf[one]} # Print the value stored in 'conf' for 'one'
+#			echo ${conf[two]} # Print the value stored in 'conf' for 'two'
+#
+##	EXAMPLE THREE
+#
+#		Update values using a second file:
+#
+#			parseconf one.conf # Read first file
+#			parseconf two.conf # Read second file
+#			declare -p conf # Dump the array with all values
+#
+##	EXAMPLES IN THE WILD
+#
+#		[VHOST MAKER](https://github.com/vr51/vhost-maker)
+#
+#
+#
+####/
+
+parseconf_version='Parseconf 1.0.0'
+
+function parseconf_run() {
+	## Process commandline arguments then send them to parseconf
+	
+	while getopts ":shv" opts ; do
+		case $opts in
+		
+		s)
+
+			arg="$2"
+			shift 2
+
+			declare -a args
+
+			for i in "$@"
+			do
+				args+=( "$1" )
+				shift
+			done
+		
+			parseconf "$arg" "${args[*]}"
+		
+		;;
+		
+		h)
+		
+			parseconf_about
+			exit
+		
+		;;
+		
+		v)
+		
+			echo "$parseconf_version"
+			exit
+		
+		;;
+		
+		esac
+		
+	done
+	
+	if (( $# == 1 )); then
+		parseconf "$@"
+	fi
+	
+}
+
+
+function parseconf() {
+
+	##/
+	#
+	#	@1 = all,only: get all values or only specific values
+	#	@2 = file: location of conf file
+	#	@3 = values: conf values to get. Only valid if @1 = only
+	#
+	##/
+
+	# Error checks
+	
+	# if (( $# < 2 )); then
+	#		printf "Error\n$FUNCNAME: expected at least 2 arguments, but only %d given.\nTry e.g:\n$FUNCNAME array_name all file_name\nOR\n$FUNCNAME array_name some file_name 'one two three'\n" $# >&2
+	#		exit 1
+	# fi
+	
+	# if [[ ! $1 =~ $___pattern_ ]]; then
+	#		printf "Error\n$FUNCNAME: invalid variable name: %s. Use letters, numbers and underscores only.\n" "$1" >&2
+	#		exit 1
+	# fi
+	
+	# Initialise
+	
+	local ___pattern_='^[_[:alpha:]][_[:alnum:]]+$'
+	
+	unset key ; 		declare -a  key ; declare -gA conf
+	local whitelist='^[[:space:]+?_[:alnum:]]'
+	local __del='[[:space:]]+?='
+
+	mapfile < "$1"
+	
+	# Parse config file for all values.
+	if (( $# == 1 )); then
+		n=0
+		for i in "${MAPFILE[@]}"; do
+		
+			if [[ -n "$i" ]] && [[ "$i" =~ $whitelist ]] && [[ "$i" =~ = ]] ; then
+			
+				key[$n]="$(echo "${i}" | grep -as -E "$i$__del" | cut -f1 -d'=' -s | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' )"
+				local key=${key[$n]}
+				
+				if [[ -n $key ]] ; then
+					conf[$key]="$(echo "${i}" | cut -f2 -d'=' -s | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+					# echo "$n: key ( $key ) | value ( ${conf[$key]} )" # Debug
+				fi
+
+				let n=n+1
+			fi
+			
+		done
+
+	else
+	
+	# Parse config file for only specific values
+
+		local key=( $2 )
+		for i in "${key[@]}"; do
+			if [[ $i =~ $whitelist_ ]]; then
+				conf["$i"]="$(echo "${MAPFILE[@]}" | grep -as -E "$i$__del" | cut -f2 -d'=' -s | xargs -0)"
+				# echo "$n: key ( $key ) | value ( ${conf[$key]} )" # Debug
+			fi
+		done
+		
+	fi
+
+}
+
+
+
+## Message
+
+function parseconf_message() {
+	printf "\nFile parsed: $arg\n"
+}
+
+function parseconf_about() {
+
+bold=$(tput bold)
+normal=$(tput sgr0)
+
+cat <<HELP
+
+${bold}PARSECONF${normal}
+
+ParseConf (Parse Config File) reads a file for lines of the format ${bold}KEY = VALUE${normal}. Any lines of the 'key = value' format are passed into a global associative array, \${conf[@]}\. This array can then be queried for specific values which can be used within whichever script called parseconf. Values within the array can updated manually or overwritten by another file loaded into the array by parseconf.
+
+The delimiter between the ${bold}key${normal} and the ${bold}value${normal} is the equality sign, '='. The delimiter can be preceded, succeeded or surrounded by spaces, it doesn't matter. The row will still be parsed.
+
+Parseconf looks for rows that begin with letters, numbers or a space and that which also contain at lease 1 equality sign. The left-hand-side is taken as the 'key' and the right-hand-side is taken as the 'value'. Leading and trailing space characters are removed from both the  'key' and the 'value'. The first equality sign is removed entirely.
+
+${bold}USAGE${normal}
+
+	Use ${bold}parseconf FILE${normal} to parse a file for all 'key = value' rows.
+	Use ${bold}parseconf -s FILE key1 key2 key3 ...${normal} to parse a file for specific keys and values.
+
+${bold}FLAGS${normal}
+
+	${bold}-s${normal} specifies that only specific keys and their corresponding values need to be parsed into the \${conf[@]} array.
+	${bold}-h${normal} prints this help file.
+	${bold}-v${normal} prints the parseconf version number.
+
+${bold}OPTIONS${normal}
+
+	No other options as yet.
+
+${bold}EXAMPLES${normal}
+
+	${bold}./parseconf '/etc/sddm.conf'${normal} will parse the file /etc/sddm.conf'.
+	${bold}./parseconf -s '/etc/sddm.conf' Current MaximumUid${normal} will parse the file '/etc/sddm.conf' for key=value 'Current' & 'MaximumUid'
+	${bold}echo \${conf[Current]}${normal} will return the value of key 'Current' from file '/etc/sddm.conf'.
+	
+	${bold}Within a script, do:${normal}
+	
+	${bold}source \$path/parseconf '/etc/sddm.conf'${normal} # Passes the file to parseconf
+	${bold}declare -p conf${normal} # Dumps all values in the variable \${conf[@]} to screen
+
+${bold}VERSION${normal}
+	
+	$version
+	
+${bold}AUTHOR${normal}
+
+	${bold}Lee Hodson${normal} as found at https://journalxtra.com/
+	${bold}Information${normal} https://journalxtra.com/linux/free-linux-software-update-script/
+	
+HELP
+
+}
+
+## Boot
+
+parseconf_run "$@"
+
+# declare -p conf # debug
