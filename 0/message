@@ -1,0 +1,5 @@
+## Message
+
+function message() {
+	printf "\n$1: $2\n"
+}

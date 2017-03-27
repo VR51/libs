@@ -1,0 +1,105 @@
+#!/bin/bash
+clear
+
+####
+#
+#	Parseconf Example
+#
+#	Note
+#
+#		Download all files and run ./parseconf_ex_1 from within test directory.
+#		For this test, make sure to use the default directory structure of this library
+#
+#	Use parseconf to,
+#
+#		1 Parse values from file one.conf
+#		2 Dump all parsed values
+#		3 Echo value associated with key 'a'
+#		4 Parse values from file two.conf
+#		5 Dump all updated values
+#		6 Echo new value associated with key 'a'
+#		7 Echo all values one-by-one
+#		8 Echo all keys and values line-by-line
+#
+#
+####
+
+# Find where we are
+path="$(dirname "$(readlink -f "$0")")"
+
+# Font styles
+
+bold=$(tput bold)
+normal=$(tput sgr0)
+
+
+# source $path/parseconf -h
+# $(parseconf -h)
+
+## File One
+
+# Parse values in one.conf
+# Quote the paths in case of 
+source "$path/../1/parseconf" "$path/confs/one.conf"
+echo "Array Dump: One"
+echo ""
+# Dump the array
+declare -p conf
+# Echo value associated with key 'one'
+echo ""
+echo "Key 'a' = ${conf[a]}"
+echo ""
+
+## File Two
+
+# Parse values in two.conf
+source "$path/../1/parseconf" "$path/confs/two.conf"
+echo "Array Dump: Two"
+echo ""
+# Dump the array
+declare -p conf
+# Echo value associated with key 'one'
+echo ""
+echo "Key 'a' = ${conf[a]}"
+echo ""
+
+## Loop through the values
+
+echo "All Values of \${conf[@]}"
+echo ""
+
+for i in "${conf[@]}"
+do
+
+	echo "$i"
+
+done
+
+echo ""
+
+
+echo "All Keys of \${!conf[@]}"
+echo ""
+
+for i in "${!conf[@]}"
+do
+
+	echo "$i"
+
+done
+
+echo ""
+
+
+echo "All Keys and Values"
+echo ""
+
+for i in "${!conf[@]}"
+do
+	echo "Key ${bold}$i${normal} has value ${bold}${conf[$i]}${normal}"
+
+done
+
+echo ""
+
+exit

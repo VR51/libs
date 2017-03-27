@@ -1,0 +1,34 @@
+#!/bin/bash
+clear
+
+## Load specified confs
+#
+#	path="$(dirname "$(readlink -f "$0")")"
+#
+#	load path ( "${confs[@]}" )
+#
+#
+#
+#
+
+
+function load() {
+
+	path="$1"
+	shift
+
+	fetch=( "$@" )
+			
+	if command -v source > /dev/null 2>&1; then
+	
+		source parseconf $path/confs/system.conf ${fetch[@]}
+		source parseconf $path/confs/custom.conf ${fetch[@]}
+
+	else
+	
+		. parseconf $path/confs/system.conf ${fetch[@]}
+		. parseconf $path/confs/custom.conf ${fetch[@]}
+		
+	fi
+	
+}

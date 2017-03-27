@@ -1,0 +1,115 @@
+#!/bin/bash
+clear
+
+## EXAMPLE: Process Commandline Arguments Passed to a Script
+
+# bash example-process-cli-arguments.sh First Second a b c d e f g h
+
+## Receive parameter from comamndline.
+## Process $1 then process the remainder parameter
+
+##
+#
+#	Functions, scripts and commands are treated equally
+#
+#		$0 = script or function name e.g. self
+#		$$ = process ID of current command, script or function
+#		$$ = process ID of last background job
+#		$# = parameter count
+#		$@ = all parameter in the stack returned and interpreted as single words
+#		$* = all parameter in the stack returned and interpreted as a single word
+#		$? = exit status of most recently executed command
+#		$n = where 'n' is a number 1 to x. Parameter position/value in the argument stack
+#		$_ = final argument of previous command executed
+#		$- = flags passed to script (not well implemented in Bash)
+#
+#	See http://www.tldp.org/LDP/abs/html/internalvariables.html
+#
+##
+
+## Do something with the captured data
+
+function run() {
+
+	##
+	#
+	# Process command line arguments
+	#
+	##
+	
+	# Check option flags first
+	# Use getopts. Here we check for -a -b and/or -c
+	# See 'man getopts' for more information about getopts
+	
+	while getopts ":abc" opts ; do
+		case $opts in
+		
+		# Option flags are arguments too. Once processed we can use 'shift' to remove them from the list of arguments passed to the script.
+		
+		a)
+		
+			# do something
+			shift
+			
+			# 'shift' removes arguments from the bottom of the argument stack. This makes $n = $n - 1 such that $2 becomes $1 etc...
+			# 'shift' is the same as 'shift 1'.
+			# 'shift 2' would remove 2 arguments from the stack.
+		;;
+		
+		b)
+		
+			# do something
+			shift
+		
+		;;
+		
+		c)
+		
+			# do something
+			shift
+		
+		;;
+		
+		esac
+		
+	done
+
+	# Argument count
+	# echo "Arguments Received: $#" # Debug
+
+	# Pass $1 to $arg
+	arg="$1"
+
+	# Remove 1st argument and cause the rest to drop one position
+	# 	This means $1 now holds the value of what was $2 etc...
+	shift
+
+	# Process the remaining arguments
+	declare -a args
+	n=1
+	for i in $@
+	do
+		printf '\n$'
+		printf "$n = $1. Args left: $#"
+		args+=( "$1" )
+		shift
+		let n=n+1
+	done
+
+	somefunction $arg "${args[*]}"
+	
+}
+
+function somefunction() {
+
+	echo ''
+	echo ''
+	echo "The first argument is $1"
+	echo "The remaining arguments are $2"
+
+}
+
+
+run "$@"
+
+exit

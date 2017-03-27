@@ -1,0 +1,44 @@
+#!/bin/bash
+
+###
+#
+# launch terminal on file click
+#
+#	This will open the current script in a terminal if the script is executed by being clicked from within a GUI.
+#
+###
+
+# Test whether we are in a terminal environment
+# $? checks the exit status of the last command executed, in this case 'tty -s'. See 'man tty' to learn about tty.
+# If the exit code is not '0' (zero means success/TRUE) then the function 'launch' is called.
+# Launch tests for an installed terminal and runs the first one found.
+
+tty -s
+if test $? -ne 0 {
+	launch
+}
+
+function launch() {
+		# This code section is released in public domain by Han Boetes <han@mijncomputer.nl>
+		# Updated by Dave Davenport <qball@gmpclient.org>
+		# Updated by Lee Hodson <https://journalxtra.com> - Added break on successful hit, added more terminals, humanized the failure message, replaced call to rofi with printf and made $terminal an array for easy reuse.
+		#
+		# This script tries to exec a terminal emulator by trying some known terminal
+		# emulators.
+		#
+		# We welcome patches that add distribution-specific mechanisms to find the
+		# preferred terminal emulator. On Debian, there is the x-terminal-emulator
+		# symlink for example.
+
+		terminal=( x-terminal-emulator xdg-terminal konsole gnome-terminal terminator urxvt rxvt Eterm aterm roxterm xfce4-terminal termite lxterminal xterm )
+		for i in ${terminal[@]}; do
+			if command -v $i > /dev/null 2>&1; then
+				exec $i -e "$0"
+				break
+			else
+				printf "\nUnable to determine the correct terminal program to run e.g gnome-terminal or Konsole. Please run this program from the command line.\n"
+				read something
+				exit 1
+			fi
+		done
+}

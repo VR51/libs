@@ -1,0 +1,24 @@
+#!/bin/bash
+
+###
+#
+#	Set Dialog Program to use.
+#		In this case we use first try to use 'dialog' then, if dialog is not installed, we try to use 'whiptail'. We could add or use any other dialog compatible program to the list.
+#		The colour palette used by whiptail is controlled by newt. It can be configured with 'sudo update-alternatives --config newt-palette'
+#		The colour palette used by dialog can be set by issuing command 'dialog --create-rc ~/.dialogrc'. The file .dialogrc can be edited as needed.
+#
+###
+
+dialoguesystem=( dialog whiptail )
+for i in "${dialoguesystem[@]}" ; do
+	if command -v $i > /dev/null 2>&1; then
+		DIALOG=$i
+		break
+	fi
+done
+
+cat <<'HEREDOC'
+
+$DIALOG can now be used as an internal alias to 'dialog' or 'whiptail', whichever was found on the system.
+
+HEREDOC
