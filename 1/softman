@@ -30,6 +30,11 @@
 #
 ##
 
+#
+#	Cycle with $options or $_options then $__options (no suggests) : this resolves big downloads
+# Adapt to allow both array and none array variable inputs
+#
+
 version='SoftMan 1.0.1'
 
 ## Receive script arguments and process them -- See 'run' at bottom of script
