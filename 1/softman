@@ -3,7 +3,7 @@
 
 ##
 #
-#	Softman 1.0.2
+#	Softman 1.0.2 (August 2017)
 #
 #	Copyright Lee Hodson @VR51
 #
@@ -22,12 +22,15 @@
 #
 #	Options:
 #
-#		upgrade, install, reinstall, find, fix, findbad, fixbad, fixmissing, build, rebuildsystem, flush
+#		upgrade, add, find, install, reinstall, fix, findbad, fixbad, fixmissing, build, rebuildsystem, flush
 #
 #			upgrade # Upgrades the system software.
+#			add <PPA> <PPA> <PPA> # Add a repository. Typically PPA repository.
+#			remove <PPA> <PPA> <PPA> # Remove a repository. Typically PPA repository.
+#			purge <PPA> <PPA> <PPA> # Purge a repository. Typically PPA repository. This removes software installed from the repository, installs the distro version when available.
+#			find <package> <package> <package>... # to find package information
 #			install <package> <package> <package>... # to install a package or list of packages with recommended dependencies. Wildcards allowed.
 #			reinstall <package> <package> <package>... # to reinstall a package or list of packages with recommended dependencies. Wildcards allowed.
-#			find <package> <package> <package>... # to find package information
 #			fix # to attempt to fix packages with broken dependencies and/or repair a slightly broken system.
 #			findbad # Attempts to find software with corrupt files
 #			fixbad # Attempts to fix software with corrupt files
@@ -137,16 +140,19 @@ function softman() {
 	#
 	#	softman arg args
 	#
-	#	@1 = find, install, upgrade, reinstall, flush, build, fix, findbad, fixbad, rebuildsystem:
+	#	@1 = upgrade, add, remove, purge, find, install, reinstall, build, flush, fix, findbad, fixbad, rebuildsystem:
+	#				are we to add a repository;
+	#				are we to remove a repository;
+	#				are we to purge a repository and remove software installed by it or replace the software by distro provided software;
 	#				are we to find packages;
-	#				are we to install, reinstall or upgrade packages;
+	#				are we to install, reinstall, build or upgrade packages;
+	#				are we to re-install every package with rebuildsystem?
 	#				are we to compile a .deb from source;
 	#				are we to fix a broken package;
 	#				are we to clean the cache;
-	#				are we to find and/or fix installed packages that are corrupted;
-	#				are we to find and/or reinstall packages with missing files;
-	#				are we to re-install every package with rebuildsystem?
-	#	@2 = list of packages to (re)install: space separated list of packages.
+	#				are we to find or fix installed packages that are corrupted;
+	#				are we to find and reinstall packages with missing files;
+		#	@2 = list of packages to (re)install: space separated list of packages.
 	# 
 	#	Copyright Lee Hodson @ VR51 & JournalXtra
 	#
@@ -162,14 +168,6 @@ function softman() {
 	_options='--install-suggests'
 
 	case $1 in
-	
-	find)
-
-		for i in ${2}; do
-			apt-cache search "$i"
-		done
-
-	;;
 	
 	launch)
 		sudo apt-get update
@@ -189,6 +187,49 @@ function softman() {
 		
 	;;
 
+	add)
+
+		for i in ${2}; do
+			add-apt-repository "$i"
+		done
+		
+		apt-get update
+
+	;;
+
+	remove)
+
+		for i in ${2}; do
+			add-apt-repository --remove "$i"
+		done
+
+		apt-get update
+
+	;;
+
+	purge)
+	
+		if command -v ppa-purge > /dev/null 2>&1; then
+			for i in ${2}; do
+				ppa-purge "$i"
+			done
+		else
+			softman install ppa-purge
+			softman purge ${2}
+		fi
+
+		apt-get update
+
+	;;
+	
+	search)
+
+		for i in ${2}; do
+			apt-cache search "$i"
+		done
+
+	;;
+
 	install)
 
 		for i in ${2}; do
@@ -205,6 +246,20 @@ function softman() {
 				apt-get install $options --reinstall "$i"
 		done
 
+	;;
+
+	build)
+	
+		for i in ${2}; do
+			apt-get $options --compile source "$i"
+		done
+	;;
+	
+	flush)
+	
+		apt-get clean
+		apt-get autoremove
+	
 	;;
 
 	fix)
@@ -259,20 +314,6 @@ function softman() {
 			# See: http://unix.stackexchange.com/questions/79028/debian-install-missing-man-pages
 	
 	;;
-	
-	build)
-	
-		for i in ${2}; do
-			apt-get $options --compile source "$i"
-		done
-	;;
-	
-	flush)
-	
-		apt-get clean
-		apt-get autoremove
-	
-	;;
 
 	*)
 
@@ -315,315 +356,16 @@ ${bold}FLAGS${normal}
 ${bold}OPTIONS${normal}
 
 	${bold}upgrade${normal}: update/upgrade the system software with suggested build dependent packages.
+	${bold}add${normal}: Add a PPA repository. Separate with a space multiple repositories listed together.
+	${bold}remove${normal}: Remove a PPA repository. Separate with a space multiple repositories listed together.
+	${bold}purge${normal}: Purge a repository. Typically PPA repository. This removes software installed from the repository, installs the distro version when available.
+	${bold}downgrade${normal}: Purge a PPA repository, uninstall software from that repository then install the version of the software supplied by the Linux distribution's official repository. Separate with a space multiple repositories listed together.
 	${bold}find${normal}: locate a package or list of packages available for installation. Wildcards allowed.
 	${bold}install${normal}: install software with suggested build dependent packages. Wildcards allowed.
 	${bold}reinstall${normal}: reinstall software with suggested build dependent packages. Wildcards allowed.
 	${bold}fix${normal}: fix broken packages and configure partially installed software.
 	${bold}findbad${normal}: find packages with corrupt files / find packages with missing files.
 	${bold}fixbad${normal}: find curupt software and automatically reinstall their packages. Use with caution.
-	${bold}fixmissing${normal}: find software with missing files and automatically reinstall their packages. Use with caution.
-	${bold}rebuildsystem${normal}: reinstall all installed software. Use with extreme caution.
-	${bold}build${normal}: download package source files and compile into a .deb binary file ready for installation
-	${bold}flush${normal}: clear the download cache and automatically remove packages that are no longer required.
-
-${bold}EXAMPLES${normal}
-
-	${bold}softman -u${normal} will only download the list of available packages.
-	${bold}softman -u install gimp${normal} will download the up-to-date list of packages available to the system then install gimp
-	${bold}softman -u install gimp kate amarok${normal} will download the up-to-date list of packages available to the system then reinstall gimp, kate and amorok.
-	
-	${bold}Within a script, do:${normal}
-	
-	${bold}source \$path/softman -u'${normal}
-	${bold}source \$path/softman -u reinstall krita'${normal}
-
-${bold}VERSION${normal}
-	
-	$version
-	
-${bold}AUTHOR${normal}
-
-	${bold}Lee Hodson${normal} as found at https://journalxtra.com/
-	${bold}Information${normal} https://journalxtra.com/linux/free-linux-software-update-script/
-	
-HELP
-
-
-}
-
-## launch terminal
-
-function softman_launch() {
-		# This code section is released in public domain by Han Boetes <han@mijncomputer.nl>
-		# Updated by Dave Davenport <qball@gmpclient.org>
-		# Updated by Lee Hodson <https://journalxtra.com> - Added break on successful hit, added more terminals, humanized the failure message, replaced call to rofi with printf and made $terminal an array for easy reuse.
-		#
-		# This script tries to exec a terminal emulator by trying some known terminal
-		# emulators.
-		#
-		# We welcome patches that add distribution-specific mechanisms to find the
-		# preferred terminal emulator. On Debian, there is the x-terminal-emulator
-		# symlink for example.
-
-		terminal=( x-terminal-emulator xdg-terminal konsole gnome-terminal terminator urxvt rxvt Eterm aterm roxterm xfce4-terminal termite lxterminal xterm )
-		for i in ${terminal[@]}; do
-			if command -v $i > /dev/null 2>&1; then
-				exec $i -e "$0"
-				# break
-			else
-				printf "\nUnable to automatically determine the correct terminal program to run e.g Console or Konsole. Please run this program from a terminal AKA the command line.\n"
-				read something
-				exit 1
-			fi
-		done
-}
-
-## Boot
-
-softman_run "$@"
-			shift
-		;;
-		
-		h)
-		
-			softman_about
-			exit
-		
-		;;
-		
-		v)
-		
-			echo "$version"
-			exit
-		
-		;;
-		
-		*)
-		
-			return 1
-		
-		;;
-		
-		esac
-		
-	done
-
-	## Send to softman
-	if test $# == 0; then # no args = run softman upgrade
-	
-		tty -s
-		if test "$?" -ne 0 ; then
-			softman_launch softman
-		else
-			sudo -v
-			softman launch
-		fi
-		
-	elif test $# == 1; then
-	
-		arg="$1"
-		shift	
-		softman "$arg"
-		
-	else
-	
-		arg="$1"
-		shift
-		declare -a args
-
-		for i in "$@"
-		do
-			args+=( "$1" )
-			shift
-		done
-		
-		softman "$arg" "${args[*]}"
-		
-	fi
-}
-
-## Run softman
-
-function softman() {
-
-	##
-	#
-	#	Softman 1.0.0
-	#
-	#	Install or reinstall packages with build dependencies.
-	#	Update system
-	#	Build binaries from source
-	#
-	#		Written to solve a Linux World problem
-	#
-	#	softman arg args
-	#
-	#	@1 = install,upgrade,reinstall,flush,build,findbad,fixbad,rebuildsystem:
-	#				are we to install, reinstall or upgrade packages;
-	#				are we to compile a .deb from source;
-	#				are we to clean the cache;
-	#				are we to find and/or fix installed packages that are corrupted;
-	#				are we to find and/or reinstall packages with missing files;
-	#				are we to re-install every package with rebuildsystem?
-	#	@2 = list of packages to (re)install: space separated list of packages.
-	# 
-	#	Copyright Lee Hodson @ VR51 & JournalXtra
-	#
-	#
-	#	EXAMPLE USAGE
-	#
-	# softman install 'simplescreenrecorder gimp vlc'
-	# softman reinstall 'simplescreenrecorder gimp vlc'
-	#
-	##
-
-	options='--install-suggests --show-progress'
-	_options='--install-suggests'
-	
-	case $1 in
-	
-	launch)
-		sudo apt-get update
-		sudo apt-get $options upgrade
-		sudo apt-get $options dist-upgrade
-		sudo apt-get $options full-upgrade
-		sudo apt-get clean
-		sudo apt-get autoremove
-		softman_message 'upgrade'
-		read something
-	;;
-	
-	upgrade)
-		apt-get $options upgrade
-		apt-get $options dist-upgrade
-		apt-get $options full-upgrade
-		
-	;;
-
-	install)
-
-		for i in ${2}; do
-				apt-get $_options build-dep "$i"
-				apt-get $options install "$i"
-		done
-
-	;;
-
-	reinstall)
-
-		for i in ${2}; do
-				apt-get $_options build-dep "$i"
-				apt-get install $options --reinstall "$i"
-		done
-
-	;;
-	
-	findbad)
-	
-		if command -v debsums > /dev/null 2>&1; then
-				apt-get clean
-				debsums_init ; debsums -cs
-				# debsums -es
-		else
-				softman install debsums
-				softman findbad
-		fi
-		
-	
-	;;
-	
-	fixbad)
-	
-		if command -v debsums > /dev/null 2>&1; then
-				apt-get clean
-				apt-get install $options --reinstall $(dpkg -S $(debsums -c) | cut -d : -f 1 | sort -u)
-		else
-				softman install debsums
-				softman fixbad
-				# debsums -es
-		fi
-	
-	;;
-	
-	fixmissing)
-	
-		if command -v debsums > /dev/null 2>&1; then
-				apt-get clean
-				debsums -c 2>&1 | cut -d " " -f 4 | sort -u | xargs -rd '\n' -- dpkg -S | cut -d : -f 1 | sort -u | xargs -rd '\n' -- apt-get install $options --reinstall
-		else
-				softman install debsums
-				softman fixmissing
-		fi
-	
-	;;
-	
-	rebuildsystem)
-	
-			dpkg -l | grep '^ii ' | sed 's/  */\t/g' |cut -f 2,3 | sed 's/\t/=/' | xargs apt-get install --reinstall -y --ignore-missing
-			
-			# See: http://unix.stackexchange.com/questions/79028/debian-install-missing-man-pages
-	
-	;;
-	
-	build)
-	
-		for i in ${2}; do
-			apt-get $options --compile source "$i"
-		done
-	;;
-	
-	flush)
-	
-		apt-get clean
-		apt-get autoremove
-	
-	;;
-
-	*)
-
-		return 2
-
-	;;
-
-	esac
-	
-	softman_message "$arg"
-
-}
-
-## Message
-
-function softman_message() {
-	printf "\n\nsoftman service completed: $arg\n"
-}
-
-function softman_about() {
-
-bold=$(tput bold)
-normal=$(tput sgr0)
-
-cat <<HELP
-
-${bold}SOFTMAN${normal}
-
-SoftMan (Software Manager) is mostly a wrapper around frequently used apt-get command sequences, plus a few repair tools. Beside the repair tools, the main difference between softman and apt-get is that softman always grabs build dependencies before it installs requested packages.
-
-${bold}USAGE${normal}
-
-	Use ${bold}sudo softman OPTION${normal} to manage software without first updating the package list.
-	Use as ${bold}sudo softman -u OPTION${normal} to manage software with package list update first.
-
-${bold}FLAGS${normal}
-
-	${bold}-u${normal} is equivalent to sudo apt-get update
-
-${bold}OPTIONS${normal}
-
-	${bold}upgrade${normal}: update/upgrade the system software with suggested build dependent packages.
-	${bold}install${normal}: install software with suggested build dependent packages.
-	${bold}reinstall${normal}: reinstall software with suggested build dependent packages.
-	${bold}findbad${normal}: find packages with corrupt files / find packages with missing files.
-	${bold}fixbad${normal}: find currupt software and automatically reinstall their packages. Use with caution.
 	${bold}fixmissing${normal}: find software with missing files and automatically reinstall their packages. Use with caution.
 	${bold}rebuildsystem${normal}: reinstall all installed software. Use with extreme caution.
 	${bold}build${normal}: download package source files and compile into a .deb binary file ready for installation
