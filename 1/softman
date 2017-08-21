@@ -3,7 +3,7 @@
 
 ##
 #
-#	Softman 1.0.2 (August 2017)
+#	Softman 1.0.2
 #
 #	Copyright Lee Hodson @VR51
 #
@@ -18,25 +18,36 @@
 #
 #		sudo ./softman or sudo bash ./softman
 #		click 'softman'
-#		load into script as a source file
+#		can be loaded into a script as a source file
+#		try ./softman -h to see help text.
 #
 #	Options:
 #
-#		upgrade, add, find, install, reinstall, fix, findbad, fixbad, fixmissing, build, rebuildsystem, flush
+#		upgrade, list, add, find, install, reinstall, fix, findbad, fixbad, fixmissing, build, rebuildsystem, flush
 #
 #			upgrade # Upgrades the system software.
+#
+#		Repository Tools
+#
+#			list # list all installed repositories.
 #			add <PPA> <PPA> <PPA> # Add a repository. Typically PPA repository.
 #			remove <PPA> <PPA> <PPA> # Remove a repository. Typically PPA repository.
 #			purge <PPA> <PPA> <PPA> # Purge a repository. Typically PPA repository. This removes software installed from the repository, installs the distro version when available.
+#
+#		Software Tools
+#
 #			find <package> <package> <package>... # to find package information
 #			install <package> <package> <package>... # to install a package or list of packages with recommended dependencies. Wildcards allowed.
 #			reinstall <package> <package> <package>... # to reinstall a package or list of packages with recommended dependencies. Wildcards allowed.
+#			build # Builds software provided as source.
+#			flush # Cleans the apt cache.
+#
+#		System Repair Tools
+#
 #			fix # to attempt to fix packages with broken dependencies and/or repair a slightly broken system.
 #			findbad # Attempts to find software with corrupt files
 #			fixbad # Attempts to fix software with corrupt files
-#			build # Builds software provided as source.
 #			rebuildsystem # Attempts to fully re-install / rebuild all software currently installed in the system.
-#			flush # Cleans the apt cache.
 #
 #
 #		Run with -u to update software repositories (equivalent to apt-get update)
@@ -140,7 +151,8 @@ function softman() {
 	#
 	#	softman arg args
 	#
-	#	@1 = upgrade, add, remove, purge, find, install, reinstall, build, flush, fix, findbad, fixbad, rebuildsystem:
+	#	@1 = upgrade, list, add, remove, purge, find, install, reinstall, build, flush, fix, findbad, fixbad, rebuildsystem:
+	#				are we to list all installed repositories;
 	#				are we to add a repository;
 	#				are we to remove a repository;
 	#				are we to purge a repository and remove software installed by it or replace the software by distro provided software;
@@ -187,28 +199,27 @@ function softman() {
 		
 	;;
 
-	add)
+	list)
+		apt-cache policy | grep http | awk '{print $2 $3}' | sort -u
+	;;
 
+	add)
 		for i in ${2}; do
 			add-apt-repository "$i"
 		done
 		
 		apt-get update
-
 	;;
 
 	remove)
-
 		for i in ${2}; do
 			add-apt-repository --remove "$i"
 		done
 
 		apt-get update
-
 	;;
 
 	purge)
-	
 		if command -v ppa-purge > /dev/null 2>&1; then
 			for i in ${2}; do
 				ppa-purge "$i"
@@ -219,58 +230,45 @@ function softman() {
 		fi
 
 		apt-get update
-
 	;;
-	
-	search)
 
+	find)
 		for i in ${2}; do
 			apt-cache search "$i"
 		done
-
 	;;
 
 	install)
-
 		for i in ${2}; do
 				apt-get $_options build-dep "$i"
 				apt-get $options install "$i"
 		done
-
 	;;
 
 	reinstall)
-
 		for i in ${2}; do
 				apt-get $_options build-dep "$i"
 				apt-get install $options --reinstall "$i"
 		done
-
 	;;
 
 	build)
-	
 		for i in ${2}; do
 			apt-get $options --compile source "$i"
 		done
 	;;
 	
 	flush)
-	
 		apt-get clean
 		apt-get autoremove
-	
 	;;
 
 	fix)
-	
 		sudo apt-get install -f
 		sudo dpkg --configure -a
-
 	;;
 	
 	findbad)
-
 		if command -v debsums > /dev/null 2>&1; then
 				apt-get clean
 				debsums_init ; debsums -cs
@@ -279,11 +277,9 @@ function softman() {
 				softman install debsums
 				softman findbad
 		fi
-
 	;;
 
 	fixbad)
-
 		if command -v debsums > /dev/null 2>&1; then
 				apt-get clean
 				apt-get install $options --reinstall $(dpkg -S $(debsums -c) | cut -d : -f 1 | sort -u)
@@ -292,11 +288,9 @@ function softman() {
 				softman fixbad
 				# debsums -es
 		fi
-
 	;;
 
 	fixmissing)
-
 		if command -v debsums > /dev/null 2>&1; then
 				apt-get clean
 				debsums -c 2>&1 | cut -d " " -f 4 | sort -u | xargs -rd '\n' -- dpkg -S | cut -d : -f 1 | sort -u | xargs -rd '\n' -- apt-get install $options --reinstall
@@ -304,15 +298,12 @@ function softman() {
 				softman install debsums
 				softman fixmissing
 		fi
-	
 	;;
 	
 	rebuildsystem)
-	
 			dpkg -l | grep '^ii ' | sed 's/  */\t/g' |cut -f 2,3 | sed 's/\t/=/' | xargs apt-get install --reinstall -y --ignore-missing
 			
 			# See: http://unix.stackexchange.com/questions/79028/debian-install-missing-man-pages
-	
 	;;
 
 	*)
@@ -356,20 +347,29 @@ ${bold}FLAGS${normal}
 ${bold}OPTIONS${normal}
 
 	${bold}upgrade${normal}: update/upgrade the system software with suggested build dependent packages.
+	
+${bold}REPOSITORY TOOLS${normal}
+
+	${bold}list${normal}: List all installed repositories.
 	${bold}add${normal}: Add a PPA repository. Separate with a space multiple repositories listed together.
 	${bold}remove${normal}: Remove a PPA repository. Separate with a space multiple repositories listed together.
 	${bold}purge${normal}: Purge a repository. Typically PPA repository. This removes software installed from the repository, installs the distro version when available.
-	${bold}downgrade${normal}: Purge a PPA repository, uninstall software from that repository then install the version of the software supplied by the Linux distribution's official repository. Separate with a space multiple repositories listed together.
+	
+${bold}SOFTWARE TOOLS${normal}
+	
 	${bold}find${normal}: locate a package or list of packages available for installation. Wildcards allowed.
 	${bold}install${normal}: install software with suggested build dependent packages. Wildcards allowed.
 	${bold}reinstall${normal}: reinstall software with suggested build dependent packages. Wildcards allowed.
+	${bold}build${normal}: download package source files and compile into a .deb binary file ready for installation
+	${bold}flush${normal}: clear the download cache and automatically remove packages that are no longer required.
+	
+${bold}SYSTEM REPAIR TOOLS${normal}
+
 	${bold}fix${normal}: fix broken packages and configure partially installed software.
 	${bold}findbad${normal}: find packages with corrupt files / find packages with missing files.
 	${bold}fixbad${normal}: find curupt software and automatically reinstall their packages. Use with caution.
 	${bold}fixmissing${normal}: find software with missing files and automatically reinstall their packages. Use with caution.
 	${bold}rebuildsystem${normal}: reinstall all installed software. Use with extreme caution.
-	${bold}build${normal}: download package source files and compile into a .deb binary file ready for installation
-	${bold}flush${normal}: clear the download cache and automatically remove packages that are no longer required.
 
 ${bold}EXAMPLES${normal}
 
