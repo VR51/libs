@@ -5,13 +5,13 @@ clear
 #
 #	Runscript 16.10 64-bit
 #
-# For *Ubuntu 16.10 64-bit
+#	For *Ubuntu 16.10 64-bit
 #
 #	Based on softman 1.0.1
 #
 #	Lead Author: Lee Hodson
 #
-#	This Release: 27th March. 2017
+#	This Release: 16th August. 2017
 #	First Written: 21st Jan. 2016
 #	First Release: 21st Jan. 2016
 #
@@ -27,19 +27,20 @@ clear
 #	TO RUN:
 #
 #	- Ensure the script is executable.
-#	- Command line: ./runscript
+#	- Command line: ./runscript OR bash ./runscript
 #	- File browser: click runscript
 #
-#	Use Runscript to install additional repositories and software onto a fresh Ubuntu or Kubuntu installation, including KDE Neon.
+#	Interactive software installer to add a set of useful packages to Ubuntu and Kubuntu distros, including KDE Neon.
+#	Installs repositories and software as detailed below. Useful for initialising a cleanly installed OS.
 #
+#	Runscript will prompt for confirmation before any repos or software are installed. First the repository installer prompt then the software installed prompt for each package set.
+#	This double opt-in prompt allows time to reconsider the first response or to choose to add the repos then add the software later.
 #
 #	This is for 64 bit systems.
 #
-#	You will be prompted to install each set of repos then prompted again to install the software packages related to those repos. The double opt-in allows you to reconsider the first response or to choose to add the repos then add the software later.
+#	Software and repositories for optional install:
 #
-#	Software and repositories Installed:
-#
-# BASIC:
+#	BASIC:
 #
 #		Backports
 #		y-ppa-manager
@@ -50,7 +51,7 @@ clear
 #		webcamstudio
 #		openshot-qt
 #		simplescreenrecorder
-# 	virtualbox-5.1
+# 		virtualbox-5.1
 #
 #	MAME:
 #
@@ -60,8 +61,8 @@ clear
 #	SERVER
 #
 #		apache2
-#		php7.0
-#		php7.0-mysql
+#		php7.1
+#		php7.1-mysql
 #		+ other PHP7 modules
 #		mariadb-server
 #		phpmyadmin
@@ -85,7 +86,7 @@ basicPackage=( software-properties-common y-ppa-manager vlc gimp krita google-ch
 
 mamePackage=( mame mame-data qmc2-sdlmame qmc2-arcade qmc2-data qchdman )
 
-serverPackage=( apache2 php7.0 php7.0-common php7.0-mysql mariadb-server phpmyadmin openssl php7.0-bcmath php7.0-json php7.0-mbstring php7.0-xsl php7.0-bz2 php7.0-curl php7.0-enchant php7.0-gmp php7.0-imap php7.0-interbase php7.0-ldap php7.0-mcrypt php7.0-odbc php7.0-pspell php7.0-readline php7.0-recode php7.0-soap php7.0-tidy php7.0-zip php7.0-dba php7.0-gd php7.0-opcache php7.0-snmp php7.0-xml php7.0-cli php7.0-phpdbg php7.0-fpm )
+serverPackage=( apache2 php7.1 php7.1-common php7.1-mysql mariadb-server phpmyadmin openssl php7.1-bcmath php7.1-json php7.1-mbstring php7.1-xsl php7.1-bz2 php7.1-curl php7.1-enchant php7.1-gmp php7.1-imap php7.1-interbase php7.1-ldap php7.1-mcrypt php7.1-odbc php7.1-pspell php7.1-readline php7.1-recode php7.1-soap php7.1-tidy php7.1-zip php7.1-dba php7.1-gd php7.1-opcache php7.1-snmp php7.1-xml php7.1-cli php7.1-phpdbg php7.1-fpm )
 
 ## Receive script arguments and process them -- See 'run' at bottom of script
 
@@ -323,6 +324,7 @@ function runscript_manual() {
 		## Install Webmin
 		# PPA is still on 'sarge' so we download and install the .deb package. Update Webmin from within Webmin.
 		# See http://www.webmin.com/deb.html
+		softman install apt-show-versions libauthen-pam-perl
 		wget http://prdownloads.sourceforge.net/webadmin/webmin_1.831_all.deb
 		dpkg --install webmin_1.831_all.deb
 		rm webmin_1.831_all.deb
